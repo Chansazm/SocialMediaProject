@@ -1,7 +1,6 @@
 package Service;
 
 import java.util.List;
-
 import DAO.AccountDAO;
 import Model.Account;
 
@@ -16,7 +15,7 @@ public class AccountService {
         accountDAO.save(account);
     }
 
-    public boolean doesUsernameExist(String username) {
+    public static boolean doesUsernameExist(String username) {
         return accountDAO.existsByUsername(username);
     }
 
@@ -27,4 +26,11 @@ public class AccountService {
     public List<Account> getAllAccounts() {
         return accountDAO.getAllAccounts();
     }
+    
+    // Add the following method
+    public Account getAccountById(int accountId) {
+        return accountDAO.findById(accountId);
+    }
+    
+    // Add any additional methods or functionality as needed
 }

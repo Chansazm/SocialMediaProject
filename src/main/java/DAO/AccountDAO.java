@@ -33,4 +33,8 @@ public class AccountDAO {
     public List<Account> getAllAccounts() {
         return new ArrayList<>(accounts);
     }
+
+    public Account findById(int accountId) {
+        return null;
+    }
 }
