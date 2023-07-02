@@ -16,11 +16,23 @@ public class MessageService {
         messageDAO.save(message);
     }
 
-    public List<Message> getMessagesByUserId(int userId) {
-        return messageDAO.findByUserId(userId);
+    public Message getMessageById(int userId) {
+        return (Message) messageDAO.findByUserId(userId);
     }
 
     public List<Message> getAllMessages() {
         return messageDAO.getAllMessages();
+    }
+
+    public Message updateMessage(int messageId, Message message) {
+        return null;
+    }
+
+    public boolean deleteMessage(int messageId) {
+        return false;
+    }
+
+    public Message createMessage(Message message) {
+        return null;
     }
 }
