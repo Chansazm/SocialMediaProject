@@ -1,33 +1,61 @@
 package Controller;
 
-import io.javalin.Javalin;
 import io.javalin.http.Context;
+import io.javalin.http.Handler;
+import java.util.List;
+import Service.AccountService;
+import Service.MessageService;
+import Model.Account;
+import Model.Message;
+import io.javalin.Javalin;
 
-/**
- * TODO: You will need to write your own endpoints and handlers for your controller. The endpoints you will need can be
- * found in readme.md as well as the test cases. You should
- * refer to prior mini-project labs and lecture materials for guidance on how a controller may be built.
- */
 public class SocialMediaController {
-    /**
-     * In order for the test cases to work, you will need to write the endpoints in the startAPI() method, as the test
-     * suite must receive a Javalin object from this method.
-     * @return a Javalin app object which defines the behavior of the Javalin controller.
-     */
+    private final AccountService accountService;
+    private final MessageService messageService;
+
+    public SocialMediaController(AccountService accountService, MessageService messageService) {
+        this.accountService = accountService;
+        this.messageService = messageService;
+    }
+
+    public Handler registerAccount = ctx -> {
+        Account account = ctx.bodyAsClass(Account.class);
+        if (account.getUsername().isBlank() || account.getPassword().length() < 4) {
+            ctx.status(400);
+            return;
+        }
+
+        if (AccountService.doesUsernameExist(account.getUsername())) {
+            ctx.status(400);
+            ctx.result("Account with this username already exists");
+            return;
+        }
+
+        
+    };
+
+    public Handler loginAccount = ctx -> {
+        Account account = ctx.bodyAsClass(Account.class);
+        Account existingAccount = AccountService.getAccountByUsername(account.getUsername());
+
+        if (existingAccount != null && existingAccount.getPassword().equals(account.getPassword())) {
+            ctx.status(200);
+            ctx.json(existingAccount);
+        } else {
+            ctx.status(401);
+            ctx.result("Invalid username or password");
+        }
+    };
+
+    // Other handler methods...
+
     public Javalin startAPI() {
         Javalin app = Javalin.create();
-        app.get("example-endpoint", this::exampleHandler);
+        app.post("/register", registerAccount);
+        app.post("/login", loginAccount);
+
+        // Add additional routes for other handler methods as needed
 
         return app;
     }
-
-    /**
-     * This is an example handler for an example endpoint.
-     * @param context The Javalin Context object manages information about both the HTTP request and response.
-     */
-    private void exampleHandler(Context context) {
-        context.json("sample text");
-    }
-
-
 }

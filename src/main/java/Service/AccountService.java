@@ -5,7 +5,7 @@ import DAO.AccountDAO;
 import Model.Account;
 
 public class AccountService {
-    private AccountDAO accountDAO;
+    private static AccountDAO accountDAO;
 
     public AccountService() {
         accountDAO = new AccountDAO();
@@ -19,7 +19,7 @@ public class AccountService {
         return accountDAO.existsByUsername(username);
     }
 
-    public Account getAccountByUsername(String username) {
+    public static Account getAccountByUsername(String username) {
         return accountDAO.findByUsername(username);
     }
 
