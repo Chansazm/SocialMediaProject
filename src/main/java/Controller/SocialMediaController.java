@@ -123,9 +123,10 @@ public class SocialMediaController {
 
     public Javalin startAPI() {
         Javalin app = Javalin.create();
-        app.get("/register", registerAccount);
-        app.get("/login", loginAccount);
-        app.post("/messages", createMessage);
+        app.post("/register", registerAccount);
+        app.post("/login",
+
+        (Handler) app.post("/messages", createMessage);
         app.get("/messages", getAllMessages);
         app.get("/messages/:message_id", getMessageById);
         app.delete("/messages/:message_id", deleteMessage);
