@@ -30,6 +30,7 @@ public class MessageServiceImpl implements MessageService{
     //5: Our API should be able to retrieve a message by its ID
     @Override
     public Message get(int id) throws SQLException {
+    
         return messageDAO.get(id);
     }
 
