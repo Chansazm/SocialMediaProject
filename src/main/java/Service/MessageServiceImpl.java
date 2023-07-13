@@ -24,7 +24,12 @@ public class MessageServiceImpl implements MessageService{
     //4: Our API should be able to retrieve all messages
     @Override
     public List<Message> getAll() throws SQLException {
-        return messageDAO.getAll();
+        try{
+            return messageDAO.getAll();
+        }catch(NullPointerException e){
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     //5: Our API should be able to retrieve a message by its ID

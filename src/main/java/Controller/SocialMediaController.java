@@ -7,29 +7,20 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+
 import java.sql.SQLException;
 import java.util.List;
 
-
-/**
- * This class is provided with a main method to allow you to manually run and test your application. This class will not
- * affect your program in any way and you may write whatever code you like here.
- */
 public class SocialMediaController {
-    public static void main(String[] args) throws SQLException {
-        SocialMediaController controller = new SocialMediaController();
-        Javalin app = controller.startAPI();
-        app.start(8080);
+    private AccountService accountService;
+    private ObjectMapper objectMapper;
 
+    public SocialMediaController(AccountService accountService, ObjectMapper objectMapper) {
+        this.accountService = accountService;
+        this.objectMapper = objectMapper;
     }
 
-    private final MessageServiceImpl messageServiceImpl = new MessageServiceImpl(null);
-    private final AccountServiceImpl accountServiceImpl = new AccountServiceImpl();
-
-    public SocialMediaController() {
-    }
-
-    public Javalin startAPI(){
+    public Javalin startAPI() {
         Javalin app = Javalin.create();
         app.post("/register", this::registerHandler);
         app.post("/login/{id}", this::loginHandler);
@@ -39,22 +30,49 @@ public class SocialMediaController {
         app.delete("/messages/{message_id}", this::deleteMessageByIdHandler);
         app.patch("/messages/{message_id}", this::updateMessageByIdHandler);
         app.get("/accounts/{account_id}/messages", this::getAllMessagesByUserIdHandler);
+
         return app;
     }
+
     //## 1: Our API should be able to process new User registrations.//create//post
-    private void registerHandler(Context ctx) throws JsonProcessingException, SQLException {
-        ObjectMapper mapper = new ObjectMapper();
 
-        Account account = mapper.readValue(ctx.body(),Account.class);
-        int addedAccount = accountServiceImpl.insert(account);
+    
+    public void registerHandler(Context ctx) {
+        try {
+            // Extract username and password from the request body
+            String username = ctx.formParam("username");
+            String password = ctx.formParam("password");
 
-        if (addedAccount == 0){
-            ctx.status(400);
-        }else{
-            ctx.json(mapper.writeValueAsString(addedAccount));
-            ctx.status(200);
+            // Validate the username and password
+            if (username == null || username.isBlank() || password == null || password.length() < 4) {
+                ctx.status(400).result("Invalid username or password");
+                return;
+            }
+
+            // Check if an account with the given username already exists
+            if (accountService.isUsernameTaken(username)) {
+                ctx.status(400).result("Username already exists");
+                return;
+            }
+
+            // Create a new account
+            Account newAccount = new Account(username, password);
+            Account createdAccount = accountService.createAccount(newAccount);
+
+            // Convert the created account to JSON
+            String accountJson = objectMapper.writeValueAsString(createdAccount);
+
+            // Set the response status to 200 OK and return the created account as JSON
+            ctx.status(200).result(accountJson);
+        } catch (Exception e) {
+            // Handle any exceptions that may occur
+            e.printStackTrace();
+            ctx.status(500).result("Internal server error");
         }
     }
+
+
+
 
 
     //## 2: Our API should be able to process User logins.//post
@@ -121,7 +139,7 @@ public class SocialMediaController {
 
     //5: Our API should be able to retrieve a message by its ID
     private void getHandler(Context ctx) throws JsonProcessingException {
-        int messageId = Integer.parseInt(ctx.pathParam("id"));
+        int messageId = Integer.parseInt(ctx.pathParam("message_id"));
 
         try {
             Message message = messageServiceImpl.get(messageId);
@@ -210,4 +228,5 @@ public class SocialMediaController {
             ctx.status(500).result("Internal server error");
         }
     }
+
 }
