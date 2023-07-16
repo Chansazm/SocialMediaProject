@@ -17,43 +17,43 @@ public class MessageServiceImpl implements MessageService{
 
     ////3: Our API should be able to process the creation of new messages
     @Override
-    public int insert(Message message) throws SQLException {
-        return messageDAO.insert(message);
+    public Message addMessage(Message message) throws SQLException {
+        return messageDAO.addMessage(message);
     }
 
     //4: Our API should be able to retrieve all messages
     @Override
-    public List<Message> getAll() throws SQLException {
-        try{
-            return messageDAO.getAll();
-        }catch(NullPointerException e){
+    public List<Message> getAllMessages() throws SQLException {
+        return messageDAO.getAllMessages();
+    }
+
+    //5: Our API should be able to retrieve a message by its ID
+    @Override
+    public Message getMessageById(int id) throws SQLException {
+        try {
+            return messageDAO.getMessageById(id);
+        } catch (NullPointerException e) {
+            // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
         }
     }
 
-    //5: Our API should be able to retrieve a message by its ID
-    @Override
-    public Message get(int id) throws SQLException {
-    
-        return messageDAO.get(id);
-    }
-
     //6: Our API should be able to delete a message identified by a message ID
     @Override
-    public int delete(int id) throws SQLException {
-        return messageDAO.delete(id);
+    public void delete(int id) throws SQLException {
+        messageDAO.deleteMessage(id);
     }
 
     //7: Our API should be able to update a message text identified by a message ID
     @Override
-    public int update(Message message) throws SQLException {
-        return messageDAO.update(message);
+    public void update(Message message) throws SQLException {
+        messageDAO.updateMessage(message);
     }
 
 
     //8: Our API should be able to retrieve all messages written by a particular user.
-    public List<Message> getAllByUser(int id) throws SQLException{
-        return messageDAO.getAllByUser(id);
+    public List<Message> getAllByUserId(int id) throws SQLException{
+        return messageDAO.getAllMessagesByUserId(id);
     }
 }

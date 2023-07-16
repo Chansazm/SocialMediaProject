@@ -9,11 +9,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-public class AccountDAOImpl implements AccountDAO{
+public class AccountDAOImpl implements AccountDAO<Account>{
 
     //## 1: Our API should be able to process new User registrations.//create//post
     @Override
-    public int insert(Account account) throws SQLException {
+    public Account addAccount(Account account) throws SQLException {
         Connection connection = ConnectionUtil.getConnection();
 
         String sql = "INSERT INTO account(username,password) VALUES(?,?)";
@@ -27,11 +27,12 @@ public class AccountDAOImpl implements AccountDAO{
 
 
 
-        return result;
+        return null;
     }
 
     //## 2: Our API should be able to process User logins.//post
     public Account login(String username, String password) throws SQLException {
+
         Connection connection = ConnectionUtil.getConnection();
 
         String query = "SELECT * FROM account WHERE username = ? AND password = ?";
@@ -52,7 +53,7 @@ public class AccountDAOImpl implements AccountDAO{
 
     //get account by id
     @Override
-    public Account get(int id) throws SQLException {
+    public Account getAccountById(int id) throws SQLException {
         Connection connection = ConnectionUtil.getConnection();
         String sql = "SELECT * FROM account WHERE account_id = ?";
 
@@ -77,35 +78,43 @@ public class AccountDAOImpl implements AccountDAO{
     }
 
 
-    //get all user accounts
-    @Override
-    public List<Account> getAll() throws SQLException {
-        return null;
-    }
-
-    //update an account
-    @Override
-    public int update(Account account) throws SQLException {
-        return 0;
-    }
-
     //delete account
     @Override
-    public int delete(int account) throws SQLException {
+    public void deleteAccountById(int account) throws SQLException {
         Connection connection = ConnectionUtil.getConnection();
         String sql = "DELETE FROM account WHERE account_id = ?";
 
         PreparedStatement preparedStatement = connection.prepareStatement(sql);
         preparedStatement.setInt(1,account);
         int result = preparedStatement.executeUpdate();
-        return result;
+
     }
 
-    @Override
-    public List<Account> getAllByUser(int t) throws SQLException {
+
+
+    public Account getAccountByUsername(String username) {
+        try {
+            Connection connection = ConnectionUtil.getConnection();
+
+            String query = "SELECT * FROM account WHERE username = ?";
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                statement.setString(1, username);
+
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next()) {
+                        int accountId = resultSet.getInt("account_id");
+                        String retrievedUsername = resultSet.getString("username");
+                        String retrievedPassword = resultSet.getString("password");
+
+                        return new Account(accountId, retrievedUsername, retrievedPassword);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            // Handle any exceptions that may occur during database access
+            e.printStackTrace();
+        }
+
         return null;
     }
-
-
 }
- 

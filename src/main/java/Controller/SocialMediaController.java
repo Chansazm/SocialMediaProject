@@ -8,22 +8,28 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
 public class SocialMediaController {
-    private AccountService accountService;
+    private AccountServiceImpl accountServiceImpl;
+    private MessageServiceImpl messageServiceImpl;
     private ObjectMapper objectMapper;
 
-    public SocialMediaController(AccountService accountService, ObjectMapper objectMapper) {
-        this.accountService = accountService;
+    public SocialMediaController(AccountServiceImpl accountService,MessageServiceImpl messageServiceImpl, ObjectMapper objectMapper) {
+        this.accountServiceImpl = accountService;
+        this.messageServiceImpl = messageServiceImpl;
         this.objectMapper = objectMapper;
     }
 
-    public Javalin startAPI() {
+    public SocialMediaController(AccountService accountService, MessageService messageService, ObjectMapper objectMapper) {
+    }
+
+    public Javalin startApi() {
         Javalin app = Javalin.create();
         app.post("/register", this::registerHandler);
-        app.post("/login/{id}", this::loginHandler);
+        app.post("/login", this::loginHandler);
         app.post("/messages", this::createMessageHandler);
         app.get("/messages/", this::getAllMessagesHandler);
         app.get("/messages/{message_id}",this::getHandler);
@@ -31,12 +37,11 @@ public class SocialMediaController {
         app.patch("/messages/{message_id}", this::updateMessageByIdHandler);
         app.get("/accounts/{account_id}/messages", this::getAllMessagesByUserIdHandler);
 
+
         return app;
     }
 
     //## 1: Our API should be able to process new User registrations.//create//post
-
-    
     public void registerHandler(Context ctx) {
         try {
             // Extract username and password from the request body
@@ -45,19 +50,20 @@ public class SocialMediaController {
 
             // Validate the username and password
             if (username == null || username.isBlank() || password == null || password.length() < 4) {
-                ctx.status(400).result("Invalid username or password");
+                ctx.status(400).result("Invalid username or password!!!");
                 return;
             }
 
             // Check if an account with the given username already exists
-            if (accountService.isUsernameTaken(username)) {
+            if (accountServiceImpl.isUsernameTaken(username)) {
                 ctx.status(400).result("Username already exists");
                 return;
             }
 
+
             // Create a new account
             Account newAccount = new Account(username, password);
-            Account createdAccount = accountService.createAccount(newAccount);
+            Account createdAccount = accountServiceImpl.addAccount(newAccount);
 
             // Convert the created account to JSON
             String accountJson = objectMapper.writeValueAsString(createdAccount);
@@ -72,24 +78,53 @@ public class SocialMediaController {
     }
 
 
-
-
-
     //## 2: Our API should be able to process User logins.//post
-    private void loginHandler(Context ctx) {
-        String username = ctx.formParam("username");
-        String password = ctx.formParam("password");
+    public void loginHandler(Context ctx) {
+        try {
+            // Extract username and password from the request body
+            String username = ctx.formParam("username");
+            String password = ctx.formParam("password");
+
+            // Validate the username and password
+            if (username == null || username.isBlank() || password == null || password.isBlank()) {
+                ctx.status(400).result("Invalid username or password@@");
+                return;
+            }
+
+            // Check if the provided credentials are valid
+            Account account = accountServiceImpl.login(username, password);
+            if (account != null) {
+                // Login successful
+                String accountJson = objectMapper.writeValueAsString(account);
+                ctx.status(200).result(accountJson);
+            } else {
+                // Login failed
+                ctx.status(401).result("Invalid username or password");
+            }
+        } catch (Exception e) {
+            // Handle any exceptions that may occur
+            e.printStackTrace();
+            ctx.status(500).result("Internal server error");
+        }
+    }
+
+
+
+    //3: Our API should be able to process the creation of new messages//POST
+    public void createMessageHandler(Context ctx) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        Message message = mapper.readValue(ctx.body(), Message.class);
 
         try {
-            // Call the login method from the AccountService
-            Account account = accountServiceImpl.login(username, password);
+            // Call the insert method from the messageService to insert the new message
+            Message addedMessage = messageServiceImpl.addMessage(message);
 
-            if (account != null) {
-                // Login successful, do something
-                ctx.status(200).json(account);
+            if (addedMessage != null) {
+                // Message creation successful
+                ctx.json(mapper.writeValueAsString(addedMessage));
             } else {
-                // Login failed, do something
-                ctx.status(401).result("Invalid username or password");
+                // Message creation unsuccessful
+                ctx.status(400).result("Failed to create the message");
             }
         } catch (SQLException e) {
             // Handle the exception or rethrow it
@@ -99,26 +134,12 @@ public class SocialMediaController {
     }
 
 
-    //3: Our API should be able to process the creation of new messages
-    private void createMessageHandler(Context ctx) throws JsonProcessingException, SQLException {
-            ObjectMapper mapper = new ObjectMapper();
-
-            Message message = mapper.readValue(ctx.body(),Message.class);
-            int addedMessage = messageServiceImpl.insert(message);
-
-            if (addedMessage == (0)){
-                ctx.status(400);
-            }else{
-                ctx.json(mapper.writeValueAsString(addedMessage));
-        }
-    }
-
 
     //4: Our API should be able to retrieve all messages
     private void getAllMessagesHandler(Context ctx) throws JsonProcessingException {
         try {
             // Call the getAll method from the MessageService
-            List<Message> messages = messageServiceImpl.getAll();
+            List<Message> messages = messageServiceImpl.getAllMessages();
 
             if (!messages.isEmpty()) {
                 // Return the list of messages in JSON format
@@ -138,11 +159,11 @@ public class SocialMediaController {
 
 
     //5: Our API should be able to retrieve a message by its ID
-    private void getHandler(Context ctx) throws JsonProcessingException {
+    public void getHandler(Context ctx) throws JsonProcessingException {
         int messageId = Integer.parseInt(ctx.pathParam("message_id"));
 
         try {
-            Message message = messageServiceImpl.get(messageId);
+            Message message = messageServiceImpl.getMessageById(messageId);
 
             if (message != null) {
                 ObjectMapper mapper = new ObjectMapper();
@@ -164,18 +185,20 @@ public class SocialMediaController {
 
         try {
             int messageId = Integer.parseInt(id);
-            int rowsAffected = messageServiceImpl.delete(messageId);
-
-            if (rowsAffected > 0) {
-                ctx.status(200);
-            } else {
-                ctx.status(404).result("No message found with the specified ID");
-            }
-        } catch (NumberFormatException | SQLException e) {
+            messageServiceImpl.delete(messageId);
+            ctx.status(200);
+        } catch (NumberFormatException e) {
             e.printStackTrace();
             ctx.status(400).result("Invalid message ID");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            ctx.status(500).result("Failed to delete the message");
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+            ctx.status(500).result("Internal server error");
         }
     }
+
 
 
     //7: Our API should be able to update a message text identified by a message ID
@@ -183,7 +206,7 @@ public class SocialMediaController {
         int messageId = Integer.parseInt(ctx.pathParam("message_id"));
 
         try {
-            Message existingMessage = messageServiceImpl.get(messageId);
+            Message existingMessage = messageServiceImpl.getMessageById(messageId);
 
             if (existingMessage != null) {
                 ObjectMapper mapper = new ObjectMapper();
@@ -191,22 +214,20 @@ public class SocialMediaController {
                 Message updatedMessage = mapper.readValue(ctx.body(), Message.class);
                 updatedMessage.setMessage_id(messageId);
 
-                int result = messageServiceImpl.update(updatedMessage);
-
-                if (result != 0) {
-                    String json = mapper.writeValueAsString(result);
-                    ctx.status(200).json(json);
-                } else {
-                    ctx.status(500).result("Failed to update message");
-                }
+                messageServiceImpl.update(updatedMessage);
+                ctx.status(200);
             } else {
                 ctx.status(404).result("Message not found");
             }
         } catch (SQLException e) {
             e.printStackTrace();
             ctx.status(500).result("Internal server error");
+        } catch (IOException e) {
+            e.printStackTrace();
+            ctx.status(400).result("Invalid request body");
         }
     }
+
 
 
     //8: Our API should be able to retrieve all messages written by a particular user.
@@ -214,7 +235,7 @@ public class SocialMediaController {
         int accountId = Integer.parseInt(ctx.pathParam("account_id"));
 
         try {
-            List<Message> messages = messageServiceImpl.getAllByUser(accountId);
+            List<Message> messages = messageServiceImpl.getAllByUserId(accountId);
 
             if (!messages.isEmpty()) {
                 ObjectMapper mapper = new ObjectMapper();
