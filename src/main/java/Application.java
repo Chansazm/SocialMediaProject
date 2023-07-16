@@ -5,8 +5,8 @@ import java.sql.SQLException;
 
 public class Application{
     public static void main(String[] args) throws SQLException {
-        SocialMediaController controller = new SocialMediaController();
-        Javalin app = controller.startAPI();
+        SocialMediaController controller = new SocialMediaController(null, null, null);
+        Javalin app = controller.startApi();
         app.start(8080);
     }
 }
