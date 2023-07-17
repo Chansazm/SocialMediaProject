@@ -22,11 +22,12 @@ public class SocialMediaController {
         this.messageServiceImpl = messageServiceImpl;
         this.objectMapper = objectMapper;
     }
+    public SocialMediaController(){};
 
     public SocialMediaController(AccountService accountService, MessageService messageService, ObjectMapper objectMapper) {
     }
 
-    public Javalin startApi() {
+    public Javalin startAPI() {
         Javalin app = Javalin.create();
         app.post("/register", this::registerHandler);
         app.post("/login", this::loginHandler);
