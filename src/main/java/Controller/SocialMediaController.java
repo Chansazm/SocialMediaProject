@@ -2,7 +2,8 @@ package Controller;
 
 import Model.Account;
 import Model.Message;
-import Service.*;
+import Service.AccountServiceImpl;
+import Service.MessageServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
@@ -17,18 +18,24 @@ public class SocialMediaController {
     private MessageServiceImpl messageServiceImpl;
     private ObjectMapper objectMapper;
 
-    public SocialMediaController(AccountServiceImpl accountService,MessageServiceImpl messageServiceImpl, ObjectMapper objectMapper) {
-        this.accountServiceImpl = accountService;
+    public SocialMediaController(AccountServiceImpl accountServiceImpl, MessageServiceImpl messageServiceImpl, ObjectMapper objectMapper) {
+        this.accountServiceImpl = accountServiceImpl;
         this.messageServiceImpl = messageServiceImpl;
         this.objectMapper = objectMapper;
     }
-    public SocialMediaController(){};
 
-    public SocialMediaController(AccountService accountService, MessageService messageService, ObjectMapper objectMapper) {
+    public SocialMediaController() {
+
     }
 
-    public Javalin startAPI() {
+    //    FlightService flightService;
+//    public FlightController(){
+//        flightService = new FlightService();
+//    }
+
+    public  Javalin startAPI() {
         Javalin app = Javalin.create();
+        //app.get("/register", ctx->ctx.result("hello World!!"));
         app.post("/register", this::registerHandler);
         app.post("/login", this::loginHandler);
         app.post("/messages", this::createMessageHandler);
@@ -117,6 +124,10 @@ public class SocialMediaController {
         Message message = mapper.readValue(ctx.body(), Message.class);
 
         try {
+            if (message.message_text == null || message.isEmpty()){
+                ctx.status(400).result("The message is blank");
+                return;
+            }
             // Call the insert method from the messageService to insert the new message
             Message addedMessage = messageServiceImpl.addMessage(message);
 
@@ -130,7 +141,7 @@ public class SocialMediaController {
         } catch (SQLException e) {
             // Handle the exception or rethrow it
             e.printStackTrace();
-            ctx.status(500).result("Internal server error");
+            ctx.status(500).result("Internal server error!");
         }
     }
 
