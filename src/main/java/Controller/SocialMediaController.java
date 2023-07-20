@@ -157,15 +157,21 @@ public class SocialMediaController {
 
 
     //4: Our API should be able to retrieve all messages
-    private void getAllMessagesHandler(Context ctx) throws JsonProcessingException {
+    private void getAllMessagesHandler(Context ctx) {
         try {
+            // Check if the messageServiceImpl is null
+            if (messageServiceImpl == null) {
+                ctx.status(500).result("MessageService is not initialized");
+                return;
+            }
+    
             // Call the getAll method from the MessageService
             List<Message> messages = messageServiceImpl.getAllMessages();
-
+    
             if (!messages.isEmpty()) {
                 // Return the list of messages in JSON format
                 ObjectMapper mapper = new ObjectMapper();
-                ctx.status(200).json(mapper.writeValueAsString(messages));
+                ctx.status(200).json(messages); // No need to convert to JSON manually, Javalin handles it for you
             } else {
                 // No messages found
                 ctx.status(404).result("No messages found");
