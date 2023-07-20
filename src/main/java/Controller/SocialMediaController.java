@@ -128,21 +128,32 @@ public class SocialMediaController {
 
 
     //3: Our API should be able to process the creation of new messages//POST
-    public void createMessageHandler(Context ctx) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
-        Message message = mapper.readValue(ctx.body(), Message.class);
-
+    private void createMessageHandler(Context ctx) {
         try {
-            if (message.message_text == null || message.isEmpty()){
+            String requestBody = ctx.body();
+    
+            // Check if the request body is null or empty
+            if (requestBody == null || requestBody.isEmpty()) {
+                ctx.status(400).result("Invalid request body");
+                return;
+            }
+    
+            // Deserialize the request body into a Message object
+            ObjectMapper mapper = new ObjectMapper();
+            Message message = mapper.readValue(requestBody, Message.class);
+    
+            // Check if the message_text field is null or empty
+            if (message.getMessage_text() == null || message.getMessage_text().isEmpty()) {
                 ctx.status(400).result("The message is blank");
                 return;
             }
+    
             // Call the insert method from the messageService to insert the new message
             Message addedMessage = messageServiceImpl.addMessage(message);
-
+    
             if (addedMessage != null) {
                 // Message creation successful
-                ctx.json(mapper.writeValueAsString(addedMessage));
+                ctx.json(addedMessage);
             } else {
                 // Message creation unsuccessful
                 ctx.status(400).result("Failed to create the message");
@@ -150,7 +161,11 @@ public class SocialMediaController {
         } catch (SQLException e) {
             // Handle the exception or rethrow it
             e.printStackTrace();
-            ctx.status(500).result("Internal server error!");
+            ctx.status(500).result("Internal server error");
+        } catch (JsonProcessingException e) {
+            // Handle the exception when there's an issue with JSON processing
+            e.printStackTrace();
+            ctx.status(400).result("Invalid request body");
         }
     }
 
