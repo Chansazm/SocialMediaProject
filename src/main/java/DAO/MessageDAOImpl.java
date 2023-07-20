@@ -41,7 +41,7 @@ public class MessageDAOImpl implements MessageDAO{
                 connection.close();
             }
         }
-        return null;
+        return message;
     }
 
 
@@ -240,17 +240,30 @@ public class MessageDAOImpl implements MessageDAO{
         } finally {
             // Close the resources in the reverse order of their creation
             if (result != null) {
-                result.close();
+                try {
+                    result.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
             if (preparedStatement != null) {
-                preparedStatement.close();
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
             if (connection != null) {
-                connection.close();
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
 
-
-
 }
+
+
+

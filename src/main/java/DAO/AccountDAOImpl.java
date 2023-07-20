@@ -7,28 +7,50 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 
 public class AccountDAOImpl implements AccountDAO<Account>{
 
     //## 1: Our API should be able to process new User registrations.//create//post
     @Override
     public Account addAccount(Account account) throws SQLException {
-        Connection connection = ConnectionUtil.getConnection();
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
 
-        String sql = "INSERT INTO account(username,password) VALUES(?,?)";
+        try {
+            connection = ConnectionUtil.getConnection();
+            String sql = "INSERT INTO account(username, password) VALUES (?, ?)";
+            preparedStatement = connection.prepareStatement(sql);
 
-        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, account.getUsername());
+            preparedStatement.setString(2, account.getPassword());
 
-        preparedStatement.setString(1,account.getUsername());
-        preparedStatement.setString(2,account.getPassword());
+            int result = preparedStatement.executeUpdate();
 
-        int result = preparedStatement.executeUpdate();
-
-
-
-        return null;
+            if (result == 1) {
+                // If the account was successfully inserted, return the created Account object
+                return account;
+            } else {
+                // Return null or throw an exception to indicate a failure in account creation
+                return null;
+            }
+        } catch (SQLException e) {
+            // Handle the exception or rethrow it if necessary
+            e.printStackTrace();
+            throw e;
+        } finally {
+            // Close the resources in the reverse order of their creation
+            if (preparedStatement != null) {
+                preparedStatement.close();
+            }
+            if (connection != null) {
+                connection.close();
+            }
+        }
     }
+
+
+
+
 
     //## 2: Our API should be able to process User logins.//post
     public Account login(String username, String password) throws SQLException {

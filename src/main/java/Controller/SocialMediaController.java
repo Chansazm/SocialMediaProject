@@ -28,14 +28,11 @@ public class SocialMediaController {
 
     }
 
-    //    FlightService flightService;
-//    public FlightController(){
-//        flightService = new FlightService();
-//    }
+
 
     public  Javalin startAPI() {
         Javalin app = Javalin.create();
-        //app.get("/register", ctx->ctx.result("hello World!!"));
+
         app.post("/register", this::registerHandler);
         app.post("/login", this::loginHandler);
         app.post("/messages", this::createMessageHandler);
@@ -49,14 +46,19 @@ public class SocialMediaController {
         return app;
     }
 
-    //## 1: Our API should be able to process new User registrations.//create//post
+    //## 1: Our API should be able to process new User registrations and return the new account
     public void registerHandler(Context ctx) {
+        ObjectMapper mapper = new ObjectMapper();
         try {
-            // Extract username and password from the request body
-            String username = ctx.formParam("username");
-            String password = ctx.formParam("password");
+            // Validate and extract username and password from the request body
+            Account account = mapper.readValue(ctx.body(),Account.class);
 
-            // Validate the username and password
+
+            String username = account.getUsername();
+            String password = account.getPassword();
+
+
+             //Validate the username and password
             if (username == null || username.isBlank() || password == null || password.length() < 4) {
                 ctx.status(400).result("Invalid username or password!!!");
                 return;
@@ -78,6 +80,8 @@ public class SocialMediaController {
 
             // Set the response status to 200 OK and return the created account as JSON
             ctx.status(200).result(accountJson);
+
+
         } catch (Exception e) {
             // Handle any exceptions that may occur
             e.printStackTrace();
@@ -86,12 +90,17 @@ public class SocialMediaController {
     }
 
 
+
     //## 2: Our API should be able to process User logins.//post
-    public void loginHandler(Context ctx) {
+    public void loginHandler(Context ctx) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+
         try {
-            // Extract username and password from the request body
-            String username = ctx.formParam("username");
-            String password = ctx.formParam("password");
+            // Validate and extract username and password from the request body
+            Account account = mapper.readValue(ctx.body(),Account.class);
+
+            String username = account.getUsername();
+            String password = account.getPassword();
 
             // Validate the username and password
             if (username == null || username.isBlank() || password == null || password.isBlank()) {
@@ -100,7 +109,7 @@ public class SocialMediaController {
             }
 
             // Check if the provided credentials are valid
-            Account account = accountServiceImpl.login(username, password);
+            account = accountServiceImpl.login(username, password);
             if (account != null) {
                 // Login successful
                 String accountJson = objectMapper.writeValueAsString(account);

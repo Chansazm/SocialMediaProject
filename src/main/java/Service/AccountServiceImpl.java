@@ -1,31 +1,33 @@
 package Service;
 
-import DAO.AccountDAO;
 import DAO.AccountDAOImpl;
 import Model.Account;
-import Model.Message;
 
 import java.sql.SQLException;
-import java.util.List;
 
 public class AccountServiceImpl implements AccountService{
 
-    AccountDAOImpl accountDAOImpl;
 
-    public AccountServiceImpl(AccountDAO accountDAO) {
+    private AccountDAOImpl accountDAOImpl;
+
+    public AccountServiceImpl(AccountDAOImpl accountDAO) {
+        this.accountDAOImpl = new AccountDAOImpl();
     }
 
     //## 1: Our API should be able to process new User registrations.//create//post
     @Override
     public Account addAccount(Account account) throws SQLException {
-        if (account != null){
-            return accountDAOImpl.addAccount(account);
+        try {
+            if (account != null) {
+                return accountDAOImpl.addAccount(account);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-        return null;
-
+        return account;
     }
 
-    //## 2: Our API should be able to process User logins.//post
+        //## 2: Our API should be able to process User logins.//post
     public Account login(String username, String password) throws SQLException {
         try {
             if (username == null || password == null) {
