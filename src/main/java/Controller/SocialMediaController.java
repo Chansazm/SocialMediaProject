@@ -223,18 +223,26 @@ public class SocialMediaController {
 
 
     //7: Our API should be able to update a message text identified by a message ID
-    private void updateMessageByIdHandler(Context ctx) throws JsonProcessingException {
+    private void updateMessageByIdHandler(Context ctx) {
         int messageId = Integer.parseInt(ctx.pathParam("message_id"));
-
+    
         try {
             Message existingMessage = messageServiceImpl.getMessageById(messageId);
-
+    
             if (existingMessage != null) {
+                // Check if the request body is not null and not empty
+                String requestBody = ctx.body();
+                if (requestBody == null || requestBody.isEmpty()) {
+                    ctx.status(400).result("Invalid request body");
+                    return;
+                }
+    
                 ObjectMapper mapper = new ObjectMapper();
-
-                Message updatedMessage = mapper.readValue(ctx.body(), Message.class);
+    
+                // Deserialize the JSON request body into a Message object
+                Message updatedMessage = mapper.readValue(requestBody, Message.class);
                 updatedMessage.setMessage_id(messageId);
-
+    
                 messageServiceImpl.update(updatedMessage);
                 ctx.status(200);
             } else {
