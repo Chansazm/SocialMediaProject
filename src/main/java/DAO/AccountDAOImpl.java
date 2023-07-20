@@ -39,12 +39,12 @@ public class AccountDAOImpl implements AccountDAO<Account>{
             throw e;
         } finally {
             // Close the resources in the reverse order of their creation
-            if (preparedStatement != null) {
-                preparedStatement.close();
-            }
-            if (connection != null) {
-                connection.close();
-            }
+            // if (preparedStatement != null) {
+            //     preparedStatement.close();
+            // }
+            // if (connection != null) {
+            //     connection.close();
+            // }
         }
     }
 

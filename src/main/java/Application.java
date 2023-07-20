@@ -22,9 +22,8 @@ public class Application {
         SocialMediaController controller = new SocialMediaController(accountServiceImpl, messageServiceImpl, objectMapper);
         Javalin app = controller.startAPI();
         app.start(8080);
-
-
-
+        app.get("/", ctx -> ctx.result("Hello World"))
+        .start(8080);
 
     }
 }

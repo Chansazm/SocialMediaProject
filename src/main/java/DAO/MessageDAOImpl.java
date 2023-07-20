@@ -34,12 +34,12 @@ public class MessageDAOImpl implements MessageDAO{
             throw e;
         } finally {
             // Close the resources in the reverse order of their creation
-            if (preparedStatement != null) {
-                preparedStatement.close();
-            }
-            if (connection != null) {
-                connection.close();
-            }
+            // if (preparedStatement != null) {
+            //     preparedStatement.close();
+            // }
+            // if (connection != null) {
+            //     connection.close();
+            // }
         }
         return message;
     }
@@ -74,15 +74,15 @@ public class MessageDAOImpl implements MessageDAO{
             throw e;
         } finally {
             // Close the resources in the reverse order of their creation
-            if (result != null) {
-                result.close();
-            }
-            if (preparedStatement != null) {
-                preparedStatement.close();
-            }
-            if (connection != null) {
-                connection.close();
-            }
+            // if (result != null) {
+            //     result.close();
+            // }
+            // if (preparedStatement != null) {
+            //     preparedStatement.close();
+            // }
+            // if (connection != null) {
+            //     connection.close();
+            // }
         }
 
         return messages;
@@ -125,15 +125,15 @@ public class MessageDAOImpl implements MessageDAO{
             throw e;
         } finally {
             // Close the resources in the reverse order of their creation
-            if (result != null) {
-                result.close();
-            }
-            if (preparedStatement != null) {
-                preparedStatement.close();
-            }
-            if (connection != null) {
-                connection.close();
-            }
+            // if (result != null) {
+            //     result.close();
+            // }
+            // if (preparedStatement != null) {
+            //     preparedStatement.close();
+            // }
+            // if (connection != null) {
+            //     connection.close();
+            // }
         }
     }
 
@@ -159,12 +159,12 @@ public class MessageDAOImpl implements MessageDAO{
             throw e;
         } finally {
             // Close the resources in the reverse order of their creation
-            if (preparedStatement != null) {
-                preparedStatement.close();
-            }
-            if (connection != null) {
-                connection.close();
-            }
+            // if (preparedStatement != null) {
+            //     preparedStatement.close();
+            // }
+            // if (connection != null) {
+            //     connection.close();
+            // }
         }
     }
 
@@ -192,12 +192,12 @@ public class MessageDAOImpl implements MessageDAO{
             throw e;
         } finally {
             // Close the resources in the reverse order of their creation
-            if (statement != null) {
-                statement.close();
-            }
-            if (connection != null) {
-                connection.close();
-            }
+            // if (statement != null) {
+            //     statement.close();
+            // }
+            // if (connection != null) {
+            //     connection.close();
+            // }
         }
 
 
