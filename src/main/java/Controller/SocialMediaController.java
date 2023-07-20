@@ -147,6 +147,11 @@ public class SocialMediaController {
                 ctx.status(400).result("The message is blank");
                 return;
             }
+
+            //check if message text is > 254 ->400
+            if (message.message_text.length() > 254){
+                ctx.status(400).result("Message length is greater than 254");
+            }
     
             // Call the insert method from the messageService to insert the new message
             Message addedMessage = messageServiceImpl.addMessage(message);
@@ -185,7 +190,7 @@ public class SocialMediaController {
     
             if (!messages.isEmpty()) {
                 // Return the list of messages in JSON format
-                ObjectMapper mapper = new ObjectMapper();
+                
                 ctx.status(200).json(messages); // No need to convert to JSON manually, Javalin handles it for you
             } else {
                 // No messages found

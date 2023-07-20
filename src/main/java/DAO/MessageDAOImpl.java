@@ -151,7 +151,7 @@ public class MessageDAOImpl implements MessageDAO{
             preparedStatement = connection.prepareStatement(sql);
             preparedStatement.setInt(1, id);
 
-            int result = preparedStatement.executeUpdate();
+            preparedStatement.executeUpdate();
 
         } catch (SQLException e) {
             // Handle the exception or rethrow it if necessary
@@ -184,7 +184,7 @@ public class MessageDAOImpl implements MessageDAO{
             statement.setString(1, message.getMessage_text());
             statement.setInt(2, message.getMessage_id());
 
-            int rowsAffected = statement.executeUpdate();
+            statement.executeUpdate();
 
         } catch (SQLException e) {
             // Handle the exception or rethrow it if necessary

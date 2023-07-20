@@ -108,7 +108,7 @@ public class AccountDAOImpl implements AccountDAO<Account>{
 
         PreparedStatement preparedStatement = connection.prepareStatement(sql);
         preparedStatement.setInt(1,account);
-        int result = preparedStatement.executeUpdate();
+        preparedStatement.executeUpdate();
 
     }
 
