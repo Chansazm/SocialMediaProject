@@ -32,15 +32,7 @@ public class MessageDAOImpl implements MessageDAO{
             // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
-        } finally {
-            // Close the resources in the reverse order of their creation
-            // if (preparedStatement != null) {
-            //     preparedStatement.close();
-            // }
-            // if (connection != null) {
-            //     connection.close();
-            // }
-        }
+        } 
         return message;
     }
 
@@ -72,18 +64,7 @@ public class MessageDAOImpl implements MessageDAO{
             // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
-        } finally {
-            // Close the resources in the reverse order of their creation
-            // if (result != null) {
-            //     result.close();
-            // }
-            // if (preparedStatement != null) {
-            //     preparedStatement.close();
-            // }
-            // if (connection != null) {
-            //     connection.close();
-            // }
-        }
+        } 
 
         return messages;
     }
@@ -123,18 +104,7 @@ public class MessageDAOImpl implements MessageDAO{
             // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
-        } finally {
-            // Close the resources in the reverse order of their creation
-            // if (result != null) {
-            //     result.close();
-            // }
-            // if (preparedStatement != null) {
-            //     preparedStatement.close();
-            // }
-            // if (connection != null) {
-            //     connection.close();
-            // }
-        }
+        } 
     }
 
 
@@ -157,15 +127,7 @@ public class MessageDAOImpl implements MessageDAO{
             // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
-        } finally {
-            // Close the resources in the reverse order of their creation
-            // if (preparedStatement != null) {
-            //     preparedStatement.close();
-            // }
-            // if (connection != null) {
-            //     connection.close();
-            // }
-        }
+        } 
     }
 
 
@@ -190,17 +152,7 @@ public class MessageDAOImpl implements MessageDAO{
             // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
-        } finally {
-            // Close the resources in the reverse order of their creation
-            // if (statement != null) {
-            //     statement.close();
-            // }
-            // if (connection != null) {
-            //     connection.close();
-            // }
-        }
-
-
+        } 
     }
 
 
@@ -237,32 +189,9 @@ public class MessageDAOImpl implements MessageDAO{
             // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
-        } finally {
-            // Close the resources in the reverse order of their creation
-            if (result != null) {
-                try {
-                    result.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (preparedStatement != null) {
-                try {
-                    preparedStatement.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
-    }
 
+}
 }
 
 

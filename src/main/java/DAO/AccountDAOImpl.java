@@ -37,15 +37,7 @@ public class AccountDAOImpl implements AccountDAO<Account>{
             // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
-        } finally {
-            // Close the resources in the reverse order of their creation
-            // if (preparedStatement != null) {
-            //     preparedStatement.close();
-            // }
-            // if (connection != null) {
-            //     connection.close();
-            // }
-        }
+        } 
     }
 
 
