@@ -279,16 +279,11 @@ public class SocialMediaController {
 
     private void updateMessageByIdHandler(Context ctx) throws JsonProcessingException {
         Gson gson = new Gson();
-        //ObjectMapper mapper = new ObjectMapper();
+        
 
         try {
             Message message = gson.fromJson(ctx.body(), Message.class);
             System.out.println("The message request is: " + message);
-
-//            Message message = mapper.readValue(ctx.body(), Message.class);
-//            System.out.println("The message request is: "+message);
-
-            int messageId = Integer.parseInt(ctx.pathParam("message_id"));
 
 
             // Validate the message_text
@@ -297,21 +292,18 @@ public class SocialMediaController {
                 return;
             }
 
-            Message retrievedMessage = messageServiceImpl.update(messageId, message);
-            //System.out.println("The retrieved message from database is: "+retrievedMessage);
+            Message retrievedMessage = messageServiceImpl.update(message.getMessage_id(), message);
+            System.out.println("The retrieved message  is: "+retrievedMessage);
 
 
             if (retrievedMessage != null) {
                 String updatedMessageJSON = gson.toJson(retrievedMessage);
-                //String updatedMessageJSON = mapper.writeValueAsString(retrievedMessage);
                 ctx.status(200).result(updatedMessageJSON);
-                System.out.println("The message was found");
 
             } else {
 
-
                 ctx.status(400).result();
-                System.out.println("The message was not found");
+                
             }
 
         } catch (NumberFormatException e) {
