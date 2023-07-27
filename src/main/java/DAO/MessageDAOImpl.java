@@ -2,11 +2,9 @@ package DAO;
 
 import Model.Message;
 import Util.ConnectionUtil;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,18 +19,32 @@ public class MessageDAOImpl implements MessageDAO{
         try {
             connection = ConnectionUtil.getConnection();
             String sql = "INSERT INTO message(posted_by, message_text, time_posted_epoch) VALUES (?, ?, ?)";
-            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
             preparedStatement.setInt(1, message.getPosted_by());
             preparedStatement.setString(2, message.getMessage_text());
             preparedStatement.setLong(3, message.getTime_posted_epoch());
 
-            preparedStatement.executeUpdate();
+            int result = preparedStatement.executeUpdate();
+
+            if (result == 1){
+                ResultSet pkeyResultSet = preparedStatement.getGeneratedKeys();
+                if (pkeyResultSet.next()) {
+                    int generated_message_id = pkeyResultSet.getInt(1);
+                    return new Message(generated_message_id, message.getPosted_by(), message.getMessage_text(), message.time_posted_epoch);
+                }else{
+
+                    return null;
+                }
+
+
+
+            }
         } catch (SQLException e) {
             // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
-        } 
+        }
         return message;
     }
 
@@ -60,19 +72,20 @@ public class MessageDAOImpl implements MessageDAO{
                 Message message = new Message(message_id, posted_by, message_text, time_posted_epoch);
                 messages.add(message);
             }
+            return messages;
         } catch (SQLException e) {
             // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
-        } 
+        }
 
-        return messages;
     }
 
 
 
     //5: Our API should be able to retrieve a message by its ID
     @Override
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public Message getMessageById(int message_id) throws SQLException {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
@@ -104,37 +117,51 @@ public class MessageDAOImpl implements MessageDAO{
             // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
-        } 
+        }
     }
 
 
     //6: Our API should be able to delete a message identified by a message ID
     @Override
-    public void deleteMessage(int id) throws SQLException {
+    public Message deleteMessage(int id) throws SQLException {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
 
         try {
             connection = ConnectionUtil.getConnection();
-            String sql = "DELETE FROM message WHERE message_id = ?";
 
-            preparedStatement = connection.prepareStatement(sql);
-            preparedStatement.setInt(1, id);
+            // First, retrieve the message from the database
+            Message messageToDelete = getMessageById(id);
 
-            preparedStatement.executeUpdate();
+            // If the message exists, proceed with the deletion
+            if (messageToDelete != null) {
+                String sql = "DELETE FROM message WHERE message_id = ?";
+                preparedStatement = connection.prepareStatement(sql);
+                preparedStatement.setInt(1, id);
 
+                int affectedRows = preparedStatement.executeUpdate();
+
+                // Check if the deletion was successful
+                if (affectedRows > 0) {
+                    // Return the deleted message object
+                    return messageToDelete;
+                }
+            }
+
+            // Return null if the message was not found or if the deletion failed
+            return null;
         } catch (SQLException e) {
             // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
-        } 
+        }
     }
 
 
 
     //7: Our API should be able to update a message text identified by a message ID
     @Override
-    public void updateMessage(Message message) throws SQLException {
+    public Message updateMessage(Message message) throws SQLException {
         Connection connection = null;
         PreparedStatement statement = null;
 
@@ -146,13 +173,31 @@ public class MessageDAOImpl implements MessageDAO{
             statement.setString(1, message.getMessage_text());
             statement.setInt(2, message.getMessage_id());
 
-            statement.executeUpdate();
+            int result = statement.executeUpdate();
+            if (result > 0) {
+                // The update was successful, fetch the updated message from the database
+                String fetchQuery = "SELECT message_id, posted_by, time_posted_epoch, message_text FROM message WHERE message_id = ?";
+                PreparedStatement fetchStatement = connection.prepareStatement(fetchQuery);
+                fetchStatement.setInt(1, message.getMessage_id());
 
+                ResultSet resultSet = fetchStatement.executeQuery();
+                if (resultSet.next()) {
+                    int retrieved_message_id = resultSet.getInt("message_id");
+                    int posted_by = resultSet.getInt("posted_by");
+                    long time_posted_epoch = resultSet.getLong("time_posted_epoch");
+                    String message_text = resultSet.getString("message_text");
+
+                    return new Message(retrieved_message_id, posted_by, message_text, time_posted_epoch);
+                }
+            }
+
+            // The update failed or no matching record found, return null or throw an exception to indicate the failure
+            return null;
         } catch (SQLException e) {
             // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
-        } 
+        }
     }
 
 
@@ -191,7 +236,7 @@ public class MessageDAOImpl implements MessageDAO{
             throw e;
         }
 
-}
+    }
 }
 
 

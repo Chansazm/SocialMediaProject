@@ -6,38 +6,41 @@ import Service.AccountServiceImpl;
 import Service.MessageServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class SocialMediaController {
-    private AccountServiceImpl accountServiceImpl;
-    private MessageServiceImpl messageServiceImpl;
-    private ObjectMapper objectMapper;
 
-    public SocialMediaController(AccountServiceImpl accountServiceImpl, MessageServiceImpl messageServiceImpl, ObjectMapper objectMapper) {
-        this.accountServiceImpl = accountServiceImpl;
-        this.messageServiceImpl = messageServiceImpl;
-        this.objectMapper = objectMapper;
-    }
+    public AccountServiceImpl accountServiceImpl;
+    public MessageServiceImpl messageServiceImpl;
+    public ObjectMapper objectMapper;
+
 
     public SocialMediaController() {
+        accountServiceImpl = new AccountServiceImpl();
+        messageServiceImpl = new MessageServiceImpl();
+        objectMapper = new ObjectMapper();
+    }
 
+    public SocialMediaController(MessageServiceImpl messageServiceImpl, AccountServiceImpl accountServiceImpl, ObjectMapper mapper) {
     }
 
 
-
-    public  Javalin startAPI() {
+    public Javalin startAPI() {
         Javalin app = Javalin.create();
 
         app.post("/register", this::registerHandler);
         app.post("/login", this::loginHandler);
         app.post("/messages", this::createMessageHandler);
         app.get("/messages/", this::getAllMessagesHandler);
-        app.get("/messages/{message_id}",this::getHandler);
+        app.get("/messages/{message_id}", this::getHandler);
         app.delete("/messages/{message_id}", this::deleteMessageByIdHandler);
         app.patch("/messages/{message_id}", this::updateMessageByIdHandler);
         app.get("/accounts/{account_id}/messages", this::getAllMessagesByUserIdHandler);
@@ -49,46 +52,55 @@ public class SocialMediaController {
     //## 1: Our API should be able to process new User registrations and return the new account
     public void registerHandler(Context ctx) {
         ObjectMapper mapper = new ObjectMapper();
+
         try {
             // Validate and extract username and password from the request body
-            Account account = mapper.readValue(ctx.body(),Account.class);
-
+            Account account = mapper.readValue(ctx.body(), Account.class);
 
             String username = account.getUsername();
             String password = account.getPassword();
 
-
-             //Validate the username and password
+            // Validate the username and password
             if (username == null || username.isBlank() || password == null || password.length() < 4) {
-                ctx.status(400).result("Invalid username or password!!!");
+                ctx.status(400).result();
                 return;
             }
 
             // Check if an account with the given username already exists
-            if (accountServiceImpl.isUsernameTaken(username)) {
-                ctx.status(400).result("Username already exists");
-                return;
+            List<Account> listOfUsersDb = accountServiceImpl.listUserIds();
+            String usernameToCheck = username;
+
+            boolean accountExists = listOfUsersDb.stream()
+                    .anyMatch(account_check -> account_check.getUsername().equals(usernameToCheck));
+
+            if (accountExists) {
+                // The account with the given username already exists
+                ctx.status(400).result();
+            } else {
+                // The account with the given username does not exist
+                // You can proceed with other operations
+
+                // Create a new account
+                Account newAccount = new Account(account.account_id, username, password);
+
+
+                Account createdAccount = accountServiceImpl.addAccount(newAccount);
+
+                // Convert the created account to JSON
+                String accountJson = mapper.writeValueAsString(createdAccount);
+                System.out.println(accountJson);
+
+
+                // Set the response status to 200 OK and return the created account as JSON
+                ctx.status(200).result(accountJson);
+                System.out.println("new account now exists");
             }
-
-
-            // Create a new account
-            Account newAccount = new Account(username, password);
-            Account createdAccount = accountServiceImpl.addAccount(newAccount);
-
-            // Convert the created account to JSON
-            String accountJson = objectMapper.writeValueAsString(createdAccount);
-
-            // Set the response status to 200 OK and return the created account as JSON
-            ctx.status(200).result(accountJson);
-
-
-        } catch (Exception e) {
-            // Handle any exceptions that may occur
+        } catch (IOException | SQLException e) {
+            // Handle the exception if necessary
             e.printStackTrace();
-            ctx.status(500).result("Internal server error");
+            ctx.status(500).result("");
         }
     }
-
 
 
     //## 2: Our API should be able to process User logins.//post
@@ -97,26 +109,26 @@ public class SocialMediaController {
 
         try {
             // Validate and extract username and password from the request body
-            Account account = mapper.readValue(ctx.body(),Account.class);
+            Account account = mapper.readValue(ctx.body(), Account.class);
 
             String username = account.getUsername();
             String password = account.getPassword();
 
             // Validate the username and password
             if (username == null || username.isBlank() || password == null || password.isBlank()) {
-                ctx.status(400).result("Invalid username or password@@");
+                ctx.status(400).result();
                 return;
             }
 
             // Check if the provided credentials are valid
-            account = accountServiceImpl.login(username, password);
-            if (account != null) {
-                // Login successful
-                String accountJson = objectMapper.writeValueAsString(account);
+            Account loggedInAccount = accountServiceImpl.login(username, password);
+
+            if (loggedInAccount != null) {
+                String accountJson = objectMapper.writeValueAsString(loggedInAccount);
                 ctx.status(200).result(accountJson);
             } else {
                 // Login failed
-                ctx.status(401).result("Invalid username or password");
+                ctx.status(401).result();
             }
         } catch (Exception e) {
             // Handle any exceptions that may occur
@@ -126,183 +138,214 @@ public class SocialMediaController {
     }
 
 
-
     //3: Our API should be able to process the creation of new messages//POST
-    private void createMessageHandler(Context ctx) {
+
+    private void createMessageHandler(Context ctx) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+
         try {
-            String requestBody = ctx.body();
-    
-            // Check if the request body is null or empty
-            if (requestBody == null || requestBody.isEmpty()) {
-                ctx.status(400).result("Invalid request body");
-                return;
-            }
-    
-            // Deserialize the request body into a Message object
-            ObjectMapper mapper = new ObjectMapper();
-            Message message = mapper.readValue(requestBody, Message.class);
-    
-            // Check if the message_text field is null or empty
-            if (message.getMessage_text() == null || message.getMessage_text().isEmpty()) {
-                ctx.status(400).result("The message is blank");
+            // Deserialize the JSON request body into a Message object
+            Message message = mapper.readValue(ctx.body(), Message.class);
+            System.out.println("The message is: " + message);
+
+            // Validate the message_text
+            if (message.getMessage_text() == null || message.getMessage_text().trim().isEmpty() || message.getMessage_text().length() > 254) {
+                ctx.status(400);
                 return;
             }
 
-            //check if message text is > 254 ->400
-            if (message.message_text.length() > 254){
-                ctx.status(400).result("Message length is greater than 254");
-            }
-    
-            // Call the insert method from the messageService to insert the new message
-            Message addedMessage = messageServiceImpl.addMessage(message);
-    
-            if (addedMessage != null) {
-                // Message creation successful
-                ctx.json(addedMessage);
+            // Validate if the account with the given posted_by exists
+            List<Account> listOfUsersDb = accountServiceImpl.listUserIds();
+            System.out.println("The list of users in Database is: " + listOfUsersDb);
+
+            boolean accountExists = listOfUsersDb.stream().anyMatch(account -> account.getAccount_id() == message.getPosted_by());
+
+            if (accountExists) {
+                // Call the service method to add the message
+                Message newMessage = messageServiceImpl.addMessage(message);
+
+                // Create Gson instance
+                Gson gson = new Gson();
+
+                // Serialize the newMessage object to JSON
+                String jsonMessage = gson.toJson(newMessage);
+                System.out.println("The json Message is " + newMessage);
+                // Set the response status to 201 Created and return the created message as JSON
+                ctx.status(200).result(jsonMessage);
             } else {
-                // Message creation unsuccessful
-                ctx.status(400).result("Failed to create the message");
+                ctx.status(400);
             }
-        } catch (SQLException e) {
-            // Handle the exception or rethrow it
-            e.printStackTrace();
-            ctx.status(500).result("Internal server error");
-        } catch (JsonProcessingException e) {
-            // Handle the exception when there's an issue with JSON processing
-            e.printStackTrace();
-            ctx.status(400).result("Invalid request body");
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
     }
-
 
 
     //4: Our API should be able to retrieve all messages
-    private void getAllMessagesHandler(Context ctx) {
-        try {
-            // Check if the messageServiceImpl is null
-            if (messageServiceImpl == null) {
-                ctx.status(500).result("MessageService is not initialized");
-                return;
-            }
-    
-            // Call the getAll method from the MessageService
-            List<Message> messages = messageServiceImpl.getAllMessages();
-    
-            if (!messages.isEmpty()) {
-                // Return the list of messages in JSON format
-                
-                ctx.status(200).json(messages); // No need to convert to JSON manually, Javalin handles it for you
-            } else {
-                // No messages found
-                ctx.status(404).result("No messages found");
-            }
-        } catch (SQLException e) {
-            // Handle the exception or rethrow it
-            e.printStackTrace();
-            ctx.status(500).result("Internal server error");
-        }
-    }
+    public List<Message> getAllMessagesHandler(Context ctx) throws SQLException {
+        List<Message> retrievedMessages = new ArrayList<>();
+        Gson gson = new Gson();
 
+        // Assuming you have a method to retrieve messages, e.g., messageServiceImpl.getAllMessages()
+        retrievedMessages = messageServiceImpl.getAllMessages();
+        System.out.println("The retrieved messages is: " + retrievedMessages);
+
+        if (retrievedMessages.isEmpty()) {
+            // No messages found, return an empty JSON array
+            ctx.status(200).json(Collections.emptyList());
+        } else {
+            // Messages found, convert the list of messages to JSON and return
+            String listJSON = gson.toJson(retrievedMessages);
+            ctx.status(200).result(listJSON);
+        }
+
+        return retrievedMessages;
+    }
 
 
     //5: Our API should be able to retrieve a message by its ID
-    public void getHandler(Context ctx) throws JsonProcessingException {
+
+    public void getHandler(Context ctx) {
         int messageId = Integer.parseInt(ctx.pathParam("message_id"));
+        System.out.println("The message id is: " + messageId);
 
         try {
             Message message = messageServiceImpl.getMessageById(messageId);
+            System.out.println("The message is: " + message);
 
             if (message != null) {
-                ObjectMapper mapper = new ObjectMapper();
-                String json = mapper.writeValueAsString(message);
+                // Create Gson instance
+                Gson gson = new Gson();
+
+                // Convert message to JSON
+                String json = gson.toJson(message);
                 ctx.status(200).json(json);
             } else {
-                ctx.status(404).result("Message not found");
+                ctx.status(200);
             }
         } catch (SQLException e) {
             e.printStackTrace();
             ctx.status(500).result("Internal server error");
         }
     }
+//    public void getHandler(Context ctx) throws JsonProcessingException {
+//        int messageId = Integer.parseInt(ctx.pathParam("message_id"));
+//        System.out.println("The message id is: "+messageId);
+//
+//        try {
+//            Message message = messageServiceImpl.getMessageById(messageId);
+//            System.out.println("The message is: "+message);
+//            if (message != null) {
+//                ObjectMapper mapper = new ObjectMapper();
+//                String json = mapper.writeValueAsString(message);
+//                ctx.status(200).json(json);
+//            } else {
+//                ctx.status(200).result();
+//            }
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//            ctx.status(500).result("Internal server error");
+//        }
+//    }
 
 
     //6: Our API should be able to delete a message identified by a message ID
     private void deleteMessageByIdHandler(Context ctx) {
+        Gson gson = new Gson();
         String id = ctx.pathParam("message_id");
+
 
         try {
             int messageId = Integer.parseInt(id);
-            messageServiceImpl.delete(messageId);
-            ctx.status(200);
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
-            ctx.status(400).result("Invalid message ID");
-        } catch (SQLException e) {
-            e.printStackTrace();
-            ctx.status(500).result("Failed to delete the message");
-        } catch (NullPointerException e) {
-            e.printStackTrace();
-            ctx.status(500).result("Internal server error");
+            Message messageToBeDeleted = messageServiceImpl.getMessageById(messageId);
+            Message deletedMessage = messageServiceImpl.delete(messageId);
+            //System.out.println("The message to be deleted is: "+messageToBeDeleted);
+
+            if (deletedMessage != null) {
+                String messageToBeDeletedJSON = gson.toJson(messageToBeDeleted);
+                ctx.status(200).result(messageToBeDeletedJSON);
+
+
+            } else {
+                ctx.status(200);
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
     }
-
 
 
     //7: Our API should be able to update a message text identified by a message ID
-    private void updateMessageByIdHandler(Context ctx) {
-        int messageId = Integer.parseInt(ctx.pathParam("message_id"));
-    
+
+    private void updateMessageByIdHandler(Context ctx) throws JsonProcessingException {
+        Gson gson = new Gson();
+        //ObjectMapper mapper = new ObjectMapper();
+
         try {
-            Message existingMessage = messageServiceImpl.getMessageById(messageId);
-    
-            if (existingMessage != null) {
-                // Check if the request body is not null and not empty
-                String requestBody = ctx.body();
-                if (requestBody == null || requestBody.isEmpty()) {
-                    ctx.status(400).result("Invalid request body");
-                    return;
-                }
-    
-                ObjectMapper mapper = new ObjectMapper();
-    
-                // Deserialize the JSON request body into a Message object
-                Message updatedMessage = mapper.readValue(requestBody, Message.class);
-                updatedMessage.setMessage_id(messageId);
-    
-                messageServiceImpl.update(updatedMessage);
-                ctx.status(200);
-            } else {
-                ctx.status(404).result("Message not found");
+            Message message = gson.fromJson(ctx.body(), Message.class);
+            System.out.println("The message request is: " + message);
+
+//            Message message = mapper.readValue(ctx.body(), Message.class);
+//            System.out.println("The message request is: "+message);
+
+            int messageId = Integer.parseInt(ctx.pathParam("message_id"));
+
+
+            // Validate the message_text
+            if (message.getMessage_text().length() > 254 || message.getMessage_text().isEmpty()) {
+                ctx.status(400).result();
+                return;
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            ctx.status(500).result("Internal server error");
-        } catch (IOException e) {
-            e.printStackTrace();
-            ctx.status(400).result("Invalid request body");
+
+            Message retrievedMessage = messageServiceImpl.update(messageId, message);
+            //System.out.println("The retrieved message from database is: "+retrievedMessage);
+
+
+            if (retrievedMessage != null) {
+                String updatedMessageJSON = gson.toJson(retrievedMessage);
+                //String updatedMessageJSON = mapper.writeValueAsString(retrievedMessage);
+                ctx.status(200).result(updatedMessageJSON);
+                System.out.println("The message was found");
+
+            } else {
+
+
+                ctx.status(400).result();
+                System.out.println("The message was not found");
+            }
+
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid message ID format.");
         }
     }
-
 
 
     //8: Our API should be able to retrieve all messages written by a particular user.
-    private void getAllMessagesByUserIdHandler(Context ctx) throws JsonProcessingException {
+    public void getAllMessagesByUserIdHandler(Context ctx) {
+        //ObjectMapper mapper = new ObjectMapper();
+        Gson gson = new Gson();
         int accountId = Integer.parseInt(ctx.pathParam("account_id"));
+        System.out.println(accountId);
 
         try {
             List<Message> messages = messageServiceImpl.getAllByUserId(accountId);
+            //System.out.println("The messages in the list is: "+messages);
 
-            if (!messages.isEmpty()) {
-                ObjectMapper mapper = new ObjectMapper();
-                String json = mapper.writeValueAsString(messages);
-                ctx.status(200).json(json);
+            if (messages == null) {
+                // No messages found, return 200 with an empty response body
+                ctx.status(200).json(Collections.emptyList());
+                System.out.println("No messages were found!!");
             } else {
-                ctx.status(404).result("No messages found for the specified user");
+                // Messages found, return 200 with the list of messages in the response body
+                //String messageJson = mapper.writeValueAsString(messages);
+                String messageJson = gson.toJson(messages);
+                ctx.status(200).json(messageJson);
+                System.out.println("The was found and the message is " + messageJson);
             }
         } catch (SQLException e) {
             e.printStackTrace();
             ctx.status(500).result("Internal server error");
+
         }
     }
-
 }

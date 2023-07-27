@@ -3,10 +3,9 @@ package DAO;
 import Model.Account;
 import Util.ConnectionUtil;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AccountDAOImpl implements AccountDAO<Account>{
 
@@ -19,7 +18,7 @@ public class AccountDAOImpl implements AccountDAO<Account>{
         try {
             connection = ConnectionUtil.getConnection();
             String sql = "INSERT INTO account(username, password) VALUES (?, ?)";
-            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
             preparedStatement.setString(1, account.getUsername());
             preparedStatement.setString(2, account.getPassword());
@@ -28,7 +27,13 @@ public class AccountDAOImpl implements AccountDAO<Account>{
 
             if (result == 1) {
                 // If the account was successfully inserted, return the created Account object
-                return account;
+                ResultSet pkeyResultSet = preparedStatement.getGeneratedKeys();
+                if (pkeyResultSet.next()) {
+                    int generated_Account_id = pkeyResultSet.getInt(1);
+
+                    Account account1 = new Account(generated_Account_id, account.getUsername(), account.getPassword());
+                    return account1;
+                }
             } else {
                 // Return null or throw an exception to indicate a failure in account creation
                 return null;
@@ -37,7 +42,8 @@ public class AccountDAOImpl implements AccountDAO<Account>{
             // Handle the exception or rethrow it if necessary
             e.printStackTrace();
             throw e;
-        } 
+        }
+        return null;
     }
 
 
@@ -130,5 +136,35 @@ public class AccountDAOImpl implements AccountDAO<Account>{
         }
 
         return null;
+    }
+
+    public List<Account> getAllUserIds() throws SQLException {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet result = null;
+        List<Account> accounts = new ArrayList<>();
+
+        try {
+            connection = ConnectionUtil.getConnection();
+            String sql = "SELECT * FROM account";
+            preparedStatement = connection.prepareStatement(sql);
+            result = preparedStatement.executeQuery();
+
+            while (result.next()) {
+                int account_id = result.getInt("account_id");
+                String username = result.getString("username");
+                String password = result.getString("password");
+
+
+                Account account = new Account(account_id, username, password);
+                accounts.add(account);
+            }
+        } catch (SQLException e) {
+            // Handle the exception or rethrow it if necessary
+            e.printStackTrace();
+            throw e;
+        }
+
+        return accounts;
     }
 }
