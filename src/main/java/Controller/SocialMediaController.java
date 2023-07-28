@@ -228,25 +228,6 @@ public class SocialMediaController {
             ctx.status(500).result("Internal server error");
         }
     }
-//    public void getHandler(Context ctx) throws JsonProcessingException {
-//        int messageId = Integer.parseInt(ctx.pathParam("message_id"));
-//        System.out.println("The message id is: "+messageId);
-//
-//        try {
-//            Message message = messageServiceImpl.getMessageById(messageId);
-//            System.out.println("The message is: "+message);
-//            if (message != null) {
-//                ObjectMapper mapper = new ObjectMapper();
-//                String json = mapper.writeValueAsString(message);
-//                ctx.status(200).json(json);
-//            } else {
-//                ctx.status(200).result();
-//            }
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//            ctx.status(500).result("Internal server error");
-//        }
-//    }
 
 
     //6: Our API should be able to delete a message identified by a message ID
@@ -279,13 +260,15 @@ public class SocialMediaController {
 
     private void updateMessageByIdHandler(Context ctx) throws JsonProcessingException {
         Gson gson = new Gson();
+        ObjectMapper mapper = new ObjectMapper();
+        
+    
         
 
         try {
+            
             Message message = gson.fromJson(ctx.body(), Message.class);
-            System.out.println("The message request is: " + message);
-
-
+                    
             // Validate the message_text
             if (message.getMessage_text().length() > 254 || message.getMessage_text().isEmpty()) {
                 ctx.status(400).result();
@@ -295,17 +278,23 @@ public class SocialMediaController {
             Message retrievedMessage = messageServiceImpl.update(message.getMessage_id(), message);
             System.out.println("The retrieved message  is: "+retrievedMessage);
 
-
-            if (retrievedMessage != null) {
-                String updatedMessageJSON = gson.toJson(retrievedMessage);
-                ctx.status(200).result(updatedMessageJSON);
-
-            } else {
-
-                ctx.status(400).result();
-                
+            //id from database
+            int id = retrievedMessage.getMessage_id();
+            //id from request
+            int requestId = message.getMessage_id();
+            if(id != requestId){
+                ctx.status(400);
             }
+           
 
+            if (retrievedMessage.getMessage_id() != message.getMessage_id()){
+                ctx.status(400);
+            }else{
+                //String updatedMessageJSON = gson.toJson(retrievedMessage);
+                String updatedMessageJSON = mapper.writeValueAsString(retrievedMessage);
+                ctx.status(200).result(updatedMessageJSON);
+                System.out.println("The message in JSON is "+updatedMessageJSON);
+            }
         } catch (NumberFormatException e) {
             ctx.status(400).result("Invalid message ID format.");
         }
