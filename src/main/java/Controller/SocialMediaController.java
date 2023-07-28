@@ -88,12 +88,12 @@ public class SocialMediaController {
 
                 // Convert the created account to JSON
                 String accountJson = mapper.writeValueAsString(createdAccount);
-                System.out.println(accountJson);
+                //System.out.println(accountJson);
 
 
                 // Set the response status to 200 OK and return the created account as JSON
                 ctx.status(200).result(accountJson);
-                System.out.println("new account now exists");
+                //System.out.println("new account now exists");
             }
         } catch (IOException | SQLException e) {
             // Handle the exception if necessary
@@ -156,7 +156,7 @@ public class SocialMediaController {
 
             // Validate if the account with the given posted_by exists
             List<Account> listOfUsersDb = accountServiceImpl.listUserIds();
-            System.out.println("The list of users in Database is: " + listOfUsersDb);
+            //System.out.println("The list of users in Database is: " + listOfUsersDb);
 
             boolean accountExists = listOfUsersDb.stream().anyMatch(account -> account.getAccount_id() == message.getPosted_by());
 
@@ -186,7 +186,7 @@ public class SocialMediaController {
         List<Message> retrievedMessages = new ArrayList<>();
         Gson gson = new Gson();
 
-        // Assuming you have a method to retrieve messages, e.g., messageServiceImpl.getAllMessages()
+        
         retrievedMessages = messageServiceImpl.getAllMessages();
         System.out.println("The retrieved messages is: " + retrievedMessages);
 
@@ -277,7 +277,7 @@ public class SocialMediaController {
             Message retrievedMessage = messageServiceImpl.update(message.getMessage_id(), message);
             
 
-            if (retrievedMessage == null){
+            if (retrievedMessage == null || retrievedMessage.isEmpty() == true){
                 ctx.status(400);
             }else{
                 String updatedMessageJSON = gson.toJson(retrievedMessage);
@@ -306,13 +306,13 @@ public class SocialMediaController {
             if (messages == null) {
                 // No messages found, return 200 with an empty response body
                 ctx.status(200).json(Collections.emptyList());
-                System.out.println("No messages were found!!");
+                //System.out.println("No messages were found!!");
             } else {
                 // Messages found, return 200 with the list of messages in the response body
                 //String messageJson = mapper.writeValueAsString(messages);
                 String messageJson = gson.toJson(messages);
                 ctx.status(200).json(messageJson);
-                System.out.println("The was found and the message is " + messageJson);
+                //System.out.println("The was found and the message is " + messageJson);
             }
         } catch (SQLException e) {
             e.printStackTrace();
