@@ -260,9 +260,8 @@ public class SocialMediaController {
 
     private void updateMessageByIdHandler(Context ctx) throws JsonProcessingException {
         Gson gson = new Gson();
-        ObjectMapper mapper = new ObjectMapper();
+        //ObjectMapper mapper = new ObjectMapper();
         
-    
         
 
         try {
@@ -276,24 +275,16 @@ public class SocialMediaController {
             }
 
             Message retrievedMessage = messageServiceImpl.update(message.getMessage_id(), message);
-            System.out.println("The retrieved message  is: "+retrievedMessage);
+            
 
-            //id from database
-            int id = retrievedMessage.getMessage_id();
-            //id from request
-            int requestId = message.getMessage_id();
-            if(id != requestId){
-                ctx.status(400);
-            }
-           
-
-            if (retrievedMessage.getMessage_id() != message.getMessage_id()){
+            if (retrievedMessage == null){
                 ctx.status(400);
             }else{
-                //String updatedMessageJSON = gson.toJson(retrievedMessage);
-                String updatedMessageJSON = mapper.writeValueAsString(retrievedMessage);
+                String updatedMessageJSON = gson.toJson(retrievedMessage);
+                //String updatedMessageJSON = mapper.writeValueAsString(retrievedMessage);
+
                 ctx.status(200).result(updatedMessageJSON);
-                System.out.println("The message in JSON is "+updatedMessageJSON);
+                //System.out.println("The message in JSON is "+updatedMessageJSON);
             }
         } catch (NumberFormatException e) {
             ctx.status(400).result("Invalid message ID format.");
